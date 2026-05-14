@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { MultiSelect } from "primereact/multiselect";
 import { Calendar } from "primereact/calendar";
+import * as XLSX from "xlsx";
 
 import { Card } from "primereact/card";
 import { PiListBulletsFill,PiFlagCheckeredFill ,PiClockCountdownBold ,PiXCircleFill ,PiWarningCircleFill, PiCheckCircleFill, PiTimerFill, PiClipboardTextFill } from "react-icons/pi";
@@ -935,6 +936,39 @@ const renderKPIs = () => {
   );
 };
 
+const exportIssuesToExcel = () => {
+  const dataToExport = filteredIssues.map((issue) => ({
+    ID: issue.id,
+    Description: issue.description || "",
+    Impact: issue.impact || "",
+    Responsibility: issue.responsibility || "",
+    Status: issue.status || "",
+    Severity: issue.severity || "",
+    "Started By": issue.started_by || "",
+    "Assigned To": issue.assigned_to || "",
+    "Role in the Organization": issue.role_in_the_organization || "",
+    "Related to Indicators": issue.related_to_indicators || "",
+    "Indicator Code": Array.isArray(issue.indicator_code)
+      ? issue.indicator_code.join(", ")
+      : issue.indicator_code || "",
+    Organization: issue.organization?.name || "",
+    Category: issue.category?.category_name || "",
+    "Start Date": issue.startDate
+      ? new Date(issue.startDate).toLocaleDateString("en-GB")
+      : "",
+    "End Date": issue.endDate
+      ? new Date(issue.endDate).toLocaleDateString("en-GB")
+      : "",
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Issues");
+
+  XLSX.writeFile(workbook, "issues.xlsx");
+};
+
 
   return (
     <div className="p-4">
@@ -953,32 +987,27 @@ const renderKPIs = () => {
         />
       </div>
       {renderKPIs()} {/* <-- Add this line here */}
-      <div className="flex flex-wrap gap-3 mb-3">
-        {/* <Dropdown
-          value={filters.status}
-          options={statusOptions}
-          onChange={(e) => setFilters({ ...filters, status: e.value })}
-          placeholder="Select Status"
-        />
-        <Dropdown
-          value={filters.responsibility}
-          options={responsibilityOptions}
-          onChange={(e) => setFilters({ ...filters, responsibility: e.value })}
-          placeholder="Select responsibility"
-        /> */}
-        <InputText
-          placeholder="Global Search"
-          onInput={(e) =>
-            setTableFilters((prev) => ({
-              ...prev,
-              global: {
-                value: e.target.value,
-                matchMode: FilterMatchMode.CONTAINS,
-              },
-            }))
-          }
-        />
-      </div>
+      <div className="flex flex-wrap gap-3 mb-3 align-items-center">
+  <InputText
+    placeholder="Global Search"
+    onInput={(e) =>
+      setTableFilters((prev) => ({
+        ...prev,
+        global: {
+          value: e.target.value,
+          matchMode: FilterMatchMode.CONTAINS,
+        },
+      }))
+    }
+  />
+
+  <Button
+    label="Export Excel"
+    icon="pi pi-file-excel"
+    severity="success"
+    onClick={exportIssuesToExcel}
+  />
+</div>
       {/* <DataTable value={filteredIssues} paginator rows={5} className="p-datatable-sm">
         <Column field="id" header="ID" style={{ width: "4em" }} />
         <Column field="title" header="Title" />
